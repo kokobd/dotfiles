@@ -27,6 +27,6 @@ mkdir -p ~/.aws
 cp -f .aws/* ~/.aws/
 
 # GPG
-if [ -z "$(which gpg)" ]; then
+if [ ! -z "$(which gpg)" ]; then
   gpg --import .gpg/private.gpg
 fi
