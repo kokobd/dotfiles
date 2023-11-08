@@ -19,7 +19,7 @@ if [ ! -f ~/.gitconfig ]; then
   cp .gitconfig ~/.gitconfig
 fi
 if [ ! -f ~/global_gitignore ]; then
-  cp global_gitignore ~/global_gitignore
+  cp global_gitignore ~/.gitignore
 fi
 
 # AWS settings
