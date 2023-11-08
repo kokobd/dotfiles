@@ -5,7 +5,13 @@ set -x
 cd "$(dirname "$0")"
 
 # Decrypt all .rage files
-scp -o StrictHostKeyChecking=no ubuntu@3.23.62.63:/home/ubuntu/.ssh/id_ed25519 ~/.ssh/id_ed25519
+mkdir -p ~/.ssh
+$GIT_SSH_COMMAND -o StrictHostKeyChecking=no ubuntu@3.23.62.63 cat /home/ubuntu/.ssh/id_ed25519 > id_ed25519
+mv id_ed25519 ~/.ssh/id_ed25519
+chmod 600 ~/.ssh/id_ed25519
+curl -L https://github.com/str4d/rage/releases/download/v0.9.2/rage-v0.9.2-x86_64-linux.tar.gz --output rage.tar.gz
+tar xf rage.tar.gz
+sudo cp rage/rage /usr/local/bin/
 find . -name '*.rage' -type f -exec ./decrypt.sh '{}' ';'
 
 # Git settings
@@ -21,6 +27,6 @@ mkdir -p ~/.aws
 cp -f .aws/* ~/.aws/
 
 # GPG
-if command -v <gpg> &> /dev/null; then
+if [ -z "$(which gpg)" ]; then
   gpg --import .gpg/private.gpg
 fi
