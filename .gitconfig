@@ -4,7 +4,7 @@ name=kokobd
 [core]
 editor=vim
 preloadindex=true
-excludesfile = /home/kokobd/.gitignore
+excludesfile = ~/.gitignore
 [commit]
 gpgsign=true
 [credential]
