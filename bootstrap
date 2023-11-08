@@ -1,3 +1,26 @@
 #!/usr/bin/env bash
 
-echo "Hello, world"
+set -x
+
+cd "$(dirname "$0")"
+
+# Decrypt all .rage files
+scp ubuntu@3.23.62.63:/home/ubuntu/.ssh/id_ed25519 ~/.ssh/id_ed25519
+find . -name '*.rage' -type f -exec ./decrypt.sh '{}' ';'
+
+# Git settings
+if [ ! -f ~/.gitconfig ]; then
+  cp .gitconfig ~/.gitconfig
+fi
+if [ ! -f ~/global_gitignore ]; then
+  cp global_gitignore ~/global_gitignore
+fi
+
+# AWS settings
+mkdir -p ~/.aws
+cp -f .aws/* ~/.aws/
+
+# GPG
+if command -v <gpg> &> /dev/null; then
+  gpg --import .gpg/private.gpg
+fi

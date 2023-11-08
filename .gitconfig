@@ -1,0 +1,17 @@
+[user]
+email=contact@zelinf.net
+name=kokobd
+[core]
+editor=vim
+preloadindex=true
+excludesfile = /home/kokobd/.gitignore
+[commit]
+gpgsign=true
+[credential]
+helper=store
+[pull]
+rebase=false
+[push]
+autosetupremote=true
+[tag]
+gpgsign=true
