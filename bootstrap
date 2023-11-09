@@ -30,3 +30,12 @@ cp -f .aws/* ~/.aws/
 if [ ! -z "$(which gpg)" ]; then
   gpg --import .gpg/private.gpg
 fi
+
+case "$GITHUB_REPOSITORY" in
+  "bellroy/haskell")
+    ./repo-setup/bellroy/haskell.sh
+    ;;
+  *)
+    echo "Not running any repo specific setup"
+    ;;
+esac
