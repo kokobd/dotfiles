@@ -3,7 +3,7 @@
 set -x
 cd /workspace
 
-echo "use flake" >> .envrc
+echo "use flake" > .envrc
 mkdir -p .vscode
 
 if [ ! -f .vscode/settings.json ]; then
