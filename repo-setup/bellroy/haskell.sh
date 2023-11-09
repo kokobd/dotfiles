@@ -52,3 +52,19 @@ program-options
   ghc-options: -Wwarn
 EOF
 fi
+
+# Before settings up my own nix cache, use bellroy's
+mkdir -p ~/.local/share/nix
+cat >~/.local/share/nix/trusted-settings.json <<EOF
+{
+  "allow-import-from-derivation": {
+    "true": true
+  },
+  "extra-substituters": {
+    "s3://bellroy-nix-cache?profile=bellroy https://cache.iog.io": true
+  },
+  "extra-trusted-public-keys": {
+    "bellroy-nix-cache-1:Cx/qZdMTZiTEUn+B16hIhqvtwYWukKo40EabPBaChJY= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=": true
+  }
+}
+EOF
