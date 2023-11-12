@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -x
-cd /workspace
+cd /workspace/haskell
 
 echo "use flake" > .envrc
 mkdir -p .vscode
