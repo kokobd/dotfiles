@@ -1,10 +1,9 @@
 name: Build and release dotfiles executable
 
 on:
-  push:
-    branches:
-      - "main"
-      - "test"
+  release:
+    types:
+      - released
 
 jobs:
   release:
