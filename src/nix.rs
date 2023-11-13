@@ -77,7 +77,7 @@ exec nix copy --to '{}' $OUT_PATHS
                 substituter
             ),
         )?;
-        fs::set_permissions("/etc/nix/post-build-hook", PermissionsExt::from_mode(777))?;
+        fs::set_permissions("/etc/nix/post-build-hook", PermissionsExt::from_mode(0o777))?;
         self.append_to_list(KEY_SECRET_FILES, "/etc/nix/secret-key");
         Ok(())
     }
