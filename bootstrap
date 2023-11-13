@@ -31,6 +31,9 @@ if [ ! -z "$(which gpg)" ]; then
   gpg --import .gpg/private.gpg
 fi
 
+# Nix
+mv nix/secret-key /etc/nix/secret-key
+
 case "$GITHUB_REPOSITORY" in
   "bellroy/haskell")
     ./repo-setup/bellroy/haskell.sh
