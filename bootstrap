@@ -33,6 +33,9 @@ fi
 
 # Nix
 mv nix/secret-key /etc/nix/secret-key
+curl -L https://github.com/kokobd/dotfiles/releases/latest/download/dotfiles.tar.gz --output dotfiles.tar.gz
+tar xf dotfiles.tar.gz
+./dotfiles
 
 case "$GITHUB_REPOSITORY" in
   "bellroy/haskell")
