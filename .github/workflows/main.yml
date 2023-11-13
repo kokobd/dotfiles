@@ -16,3 +16,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           RUSTTARGET: x86_64-unknown-linux-musl
+          ARCHIVE_TYPES: tar.gz
+          ARCHIVE_NAME: dotfiles.tar.gz
