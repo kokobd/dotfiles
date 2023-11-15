@@ -9,7 +9,7 @@ pub fn bootstrap() -> anyhow::Result<()> {
         "docker" => Some(format!(
             "s3://nix-cache?endpoint=http://192.168.31.2:9091&profile=minio&{MY_NIX_CACHE_PARAMS}"
         )),
-        "ecs-ec2" => Some(String::from("TODO")),
+        "ecs-ec2" => Some(format!("s3://kokobd-nix-cache-ohio?profile=default&{MY_NIX_CACHE_PARAMS}")),
         _ => None,
     };
     if let Some(nix_substituter) = nix_substituter {
