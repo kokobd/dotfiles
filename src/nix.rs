@@ -1,5 +1,5 @@
 use anyhow::{bail, Result};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
@@ -83,7 +83,16 @@ exec nix copy --to '{}' $OUT_PATHS
     }
 
     fn append_to_list(&mut self, conf_key: &str, value: &str) {
-        let new_value: String = self.0.remove(conf_key).unwrap_or(String::new()) + " " + value;
+        let mut existing_entries: HashSet<String> = self
+            .0
+            .remove(conf_key)
+            .unwrap_or(String::new())
+            .split(" ")
+            .filter(|&s| !s.trim().is_empty())
+            .map(String::from)
+            .collect();
+        existing_entries.insert(String::from(value));
+        let new_value = itertools::join(existing_entries.iter(), " ");
         self.0.insert(conf_key.to_string(), new_value);
     }
 

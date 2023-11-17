@@ -1,4 +1,5 @@
 mod nix;
+pub mod secret;
 use std::env;
 
 pub fn bootstrap() -> anyhow::Result<()> {
@@ -9,7 +10,7 @@ pub fn bootstrap() -> anyhow::Result<()> {
         "docker" => Some(format!(
             "s3://nix-cache?endpoint=http://192.168.31.2:9091&profile=minio&{MY_NIX_CACHE_PARAMS}"
         )),
-        "ecs-ec2" => Some(format!("s3://kokobd-nix-cache-ohio?profile=default&{MY_NIX_CACHE_PARAMS}")),
+        "ecs-ec2" => Some(format!("s3://kokobd-nix-cache-ohio?profile=default&region=us-east-2&{MY_NIX_CACHE_PARAMS}")),
         _ => None,
     };
     if let Some(nix_substituter) = nix_substituter {
