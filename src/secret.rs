@@ -5,7 +5,8 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::{fs, iter};
 
-pub fn decrypt(filepath: String) -> anyhow::Result<()> {
+pub fn decrypt_file(filepath: String) -> anyhow::Result<()> {
+
     let filepath = Path::new(&filepath);
     if filepath.extension().and_then(|x| x.to_str()) != Some("rage") {
         bail!(
@@ -13,8 +14,17 @@ pub fn decrypt(filepath: String) -> anyhow::Result<()> {
             filepath
         );
     }
+    let bytes = fs::read(filepath)?;
+    let decrypted_data = decrypt(&bytes)?;
 
-    let encrypted_data = Cursor::new(fs::read(filepath)?);
+    fs::write(filepath.with_extension(""), decrypted_data)?;
+    fs::remove_file(filepath)?;
+    Ok(())
+}
+
+pub fn decrypt(bytes: &[u8]) -> anyhow::Result<Vec<u8>> {
+    let encrypted_data = Cursor::new(bytes);
+
     let identity_file_path = {
         let mut path = locate_ssh_dir()?;
         path.push("id_ed25519");
@@ -25,10 +35,7 @@ pub fn decrypt(filepath: String) -> anyhow::Result<()> {
         .map_err(|err| anyhow!(err))?;
     let decrypted_data = decrypt_pure(&identity, encrypted_data)?;
 
-    fs::write(filepath.with_extension(""), decrypted_data)?;
-    fs::remove_file(filepath)?;
-
-    Ok(())
+    Ok(decrypted_data)
 }
 
 fn locate_ssh_dir() -> anyhow::Result<PathBuf> {
@@ -51,7 +58,7 @@ fn decrypt_pure<R: BufRead>(key: &dyn Identity, encrypted: R) -> anyhow::Result<
     Ok(decrypted)
 }
 
-pub fn encrypt(filepath: String) -> anyhow::Result<()> {
+pub fn encrypt_file(filepath: String) -> anyhow::Result<()> {
     let filepath = Path::new(&filepath);
     let public_key = {
         let mut path = locate_ssh_dir()?;

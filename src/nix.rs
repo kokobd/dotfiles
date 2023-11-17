@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::os::unix::prelude::PermissionsExt;
@@ -21,7 +21,7 @@ impl Configuration {
         let file_content = if !nix_conf_exists {
             String::new()
         } else {
-            fs::read_to_string(NIX_CONF_PATH)?
+            fs::read_to_string(NIX_CONF_PATH).map_err(|err| anyhow!(err))?
         };
         Configuration::parse(&file_content)
     }
@@ -45,7 +45,8 @@ impl Configuration {
     }
 
     pub fn write(&self) -> Result<()> {
-        fs::write(NIX_CONF_PATH, self.render())?;
+        fs::write(NIX_CONF_PATH, self.render())
+            .with_context(|| format!("writing {}", NIX_CONF_PATH))?;
         Ok(())
     }
 
@@ -76,8 +77,10 @@ exec nix copy --to '{}' $OUT_PATHS
         "#,
                 substituter
             ),
-        )?;
-        fs::set_permissions("/etc/nix/post-build-hook", PermissionsExt::from_mode(0o777))?;
+        )
+        .with_context(|| format!("failed to write post build hook"))?;
+        fs::set_permissions("/etc/nix/post-build-hook", PermissionsExt::from_mode(0o777))
+            .with_context(|| format!("failed to update post build hook permissions"))?;
         self.append_to_list(KEY_SECRET_FILES, "/etc/nix/secret-key");
         Ok(())
     }

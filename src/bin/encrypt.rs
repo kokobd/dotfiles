@@ -3,7 +3,7 @@ use dotfiles::secret;
 fn main() {
     match std::env::args().nth(1) {
         Some(filepath) => {
-            if let Err(e) = secret::encrypt(filepath) {
+            if let Err(e) = secret::encrypt_file(filepath) {
                 println!("encryption failed: {}", e);
             }
         }
