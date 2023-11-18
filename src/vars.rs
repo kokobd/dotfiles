@@ -1,8 +1,9 @@
+use anyhow::Context;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::fs::OpenOptions;
-use std::path::PathBuf;
 use std::io::Write;
+use std::path::PathBuf;
 
 pub struct UserEnvVars {
     vars: HashMap<String, String>,
@@ -40,9 +41,12 @@ impl UserEnvVars {
         let mut bashrc_file = OpenOptions::new()
             .write(true)
             .append(true)
-            .open(bashrc_path)?;
+            .open(bashrc_path)
+            .with_context(|| format!("failed to open ~/.bashrc"))?;
         bashrc_file.write_all(b"\n")?;
-        bashrc_file.write_all(script_to_append.as_bytes())?;
+        bashrc_file
+            .write_all(script_to_append.as_bytes())
+            .with_context(|| format!("failed to write to ~/.bashrc"))?;
         Ok(())
     }
 }
