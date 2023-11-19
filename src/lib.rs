@@ -1,3 +1,4 @@
+mod dotfile;
 mod nix;
 pub mod secret;
 mod vars;
