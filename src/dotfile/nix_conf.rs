@@ -1,16 +1,16 @@
-use std::{convert::identity, ops::Index};
+use std::{any::Any, convert::identity, error::Error};
 
 use crate::dotfile::apply_utf8;
 
-use super::{ApplyError, Dotfile, MergeError};
+use super::{merge_same_type, ApplyError, Dotfile, MergeError};
 
 /**
 /etc/nix/nix.conf: https://nixos.org/manual/nix/stable/command-ref/conf-file
 */
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct NixConf(NixConfExt<()>);
 
-#[derive(Debug)]
+#[derive(Debug, Default, Clone)]
 pub struct NixConfExt<T> {
     substituters: (Vec<String>, T),
     trusted_public_keys: (Vec<String>, T),
@@ -77,12 +77,14 @@ struct Line {
 }
 
 impl Dotfile for NixConf {
-    type ApplyError = MergeError;
+    fn as_any(self: Box<Self>) -> Box<dyn Any> {
+        Box::new(*self)
+    }
 
-    fn apply(self, old_content: &[u8]) -> Result<Option<Vec<u8>>, ApplyError<Self::ApplyError>> {
+    fn apply(&self, old_content: &[u8]) -> Result<Option<Vec<u8>>, ApplyError> {
         apply_utf8::<Self, _>(
             old_content,
-            |old_content: String| -> Result<Option<String>, Self::ApplyError> {
+            |old_content: String| -> Result<Option<String>, Box<dyn Error + Send + Sync>> {
                 let lines: Vec<String> = old_content.lines().map(|s| String::from(s)).collect();
 
                 let mut existing_config: NixConfExt<Option<Line>> = NixConfExt::new(|| None);
@@ -113,7 +115,7 @@ impl Dotfile for NixConf {
                         &mut existing_config.secret_key_files,
                     );
                 }
-                let new_config = merge(self.0, existing_config)?;
+                let new_config = merge(self.0.clone(), existing_config)?;
                 let new_lines: Vec<Line> = vec![
                     render_list("substituters", new_config.substituters),
                     render_list("trusted-public-keys", new_config.trusted_public_keys),
@@ -135,13 +137,13 @@ impl Dotfile for NixConf {
         )
     }
 
-    fn merge(x: Self, y: Self) -> Result<Box<Self>, MergeError> {
-        merge(x.0, y.0).map(|z| Box::new(NixConf(z.map_ext(|_| ()))))
+    fn merge(&mut self, y: Box<dyn Dotfile>) -> Result<(), MergeError> {
+        merge_same_type(self, y, |x, y| Ok(NixConf(merge(x.0, y.0)?)))
     }
 }
 
-fn merge<Ext>(x: NixConfExt<()>, y: NixConfExt<Ext>) -> Result<Box<NixConfExt<Ext>>, MergeError> {
-    Ok(Box::new(NixConfExt {
+fn merge<Ext>(x: NixConfExt<()>, y: NixConfExt<Ext>) -> Result<NixConfExt<Ext>, MergeError> {
+    Ok(NixConfExt {
         substituters: merge_list(x.substituters, y.substituters),
         trusted_public_keys: merge_list(x.trusted_public_keys, y.trusted_public_keys),
         post_build_hook: merge_single_value(
@@ -150,7 +152,7 @@ fn merge<Ext>(x: NixConfExt<()>, y: NixConfExt<Ext>) -> Result<Box<NixConfExt<Ex
             y.post_build_hook,
         )?,
         secret_key_files: merge_list(x.secret_key_files, y.secret_key_files),
-    }))
+    })
 }
 
 fn merge_list<T, U>(mut x: (Vec<T>, ()), mut y: (Vec<T>, U)) -> (Vec<T>, U) {
@@ -301,8 +303,7 @@ secret-key-files = /etc/nix/secret-key"#
             .apply(old_content)
             .map(|x| x.map(|x| String::from_utf8(x).unwrap()));
         assert_eq!(
-            result,
-            Ok(Some(
+        result.unwrap().unwrap(),
                 r#"
 experimental-features = nix-command flakes
 build-users-group = nixbld
@@ -311,7 +312,6 @@ post-build-hook = /etc/nix/post-build-hook
 secret-key-files = a b /etc/nix/secret-key
 substituters = s3://nix-cache?endpoint=http://192.168.31.2:9091&profile=minio&compression=zstd&priority=0&trusted=true&want-mass-query=true"#
                     .to_string()
-            ))
         )
     }
 }

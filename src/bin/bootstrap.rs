@@ -1,8 +1,14 @@
-use dotfiles::bootstrap;
+use clap::Parser;
+
+/// Bootstrap my dotfiles
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// The list of targets to bootstrap. If not specified, will bootstrap everything.
+    targets: Vec<dotfiles::Target>,
+}
 
 fn main() {
-    if let Err(e) = bootstrap() {
-        eprintln!("Error: {:?}", e);
-        std::process::exit(1);
-    }
+    let args = Args::parse();
+    println!("{:?}", args.targets);
 }
