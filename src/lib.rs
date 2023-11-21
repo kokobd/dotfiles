@@ -1,18 +1,10 @@
 mod dotfile;
-mod nix;
 pub mod secret;
-mod vars;
-use pathbuf::pathbuf;
-
 use anyhow::anyhow;
-use dotfile::{nix_conf::NixConf, Dotfile, merge_dotfiles};
-use std::{
-    collections::HashMap,
-    env,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
-use vars::UserEnvVars;
+use dotfile::unstructured::Unstructured;
+use dotfile::{merge_dotfiles, nix_conf::NixConf, Dotfile};
+use pathbuf::pathbuf;
+use std::{collections::HashMap, os::unix::fs::PermissionsExt, path::PathBuf};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
 pub enum Target {
@@ -44,9 +36,7 @@ pub fn bootstrap(config: Config, targets: Vec<Target>) -> anyhow::Result<()> {
     };
     let home_dir: PathBuf = dirs::home_dir().ok_or(anyhow!("Could not find home directory"))?;
 
-    let dotfiles = merge_dotfiles(vec![
-        personal_nix_cache(&config)
-    ])?;
+    let dotfiles = merge_dotfiles(vec![personal_nix_cache(&config)])?;
 
     Ok(())
 }
@@ -79,5 +69,25 @@ fn personal_nix_cache(config: &Config) -> HashMap<PathBuf, Box<dyn Dotfile>> {
                 "cache.zelinf.net:poESahuRAXqYC2QPevSId+pTtoq0P1XfTxaSHRgfvVI=".to_string(),
             ]),
     );
-    HashMap::from([(pathbuf!["/etc", "nix", "nix.conf"], nix_conf)])
+    let nix_post_build_hook: Box<dyn Dotfile> = Box::new(
+        Unstructured::new_utf8(
+            r#"#!/usr/bin/env bash
+set -eu
+set -f # disable globbing
+export IFS=' '
+
+echo "Signing paths" $OUT_PATHS
+nix store sign --recursive --key-file /etc/nix/secret-key $OUT_PATHS
+echo "Uploading paths" $OUT_PATHS
+exec nix copy --to '{}' $OUT_PATHS
+"#
+            .to_string(),
+        )
+        .with_permissions(std::fs::Permissions::from_mode(0o777)),
+    );
+    // TODO: decrypt secret key
+    HashMap::from([
+        (pathbuf!["/etc", "nix", "nix.conf"], nix_conf),
+        (pathbuf!["/etc/nix/post-build-hook"], nix_post_build_hook),
+    ])
 }

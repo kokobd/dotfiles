@@ -1,4 +1,4 @@
-use std::{any::Any, convert::identity, error::Error};
+use std::{any::Any, convert::identity, error::Error, os::unix::fs::PermissionsExt};
 
 use crate::dotfile::apply_utf8;
 
@@ -79,6 +79,10 @@ struct Line {
 impl Dotfile for NixConf {
     fn as_any(self: Box<Self>) -> Box<dyn Any> {
         Box::new(*self)
+    }
+
+    fn file_permission(&self) -> std::fs::Permissions {
+        std::fs::Permissions::from_mode(0o644)
     }
 
     fn apply(&self, old_content: &[u8]) -> Result<Option<Vec<u8>>, ApplyError> {

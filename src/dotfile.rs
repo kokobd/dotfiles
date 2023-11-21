@@ -1,5 +1,5 @@
 use anyhow::Context;
-use std::{any::Any, collections::HashMap, error::Error, path::PathBuf};
+use std::{any::Any, collections::HashMap, error::Error, path::PathBuf, fs};
 use thiserror::Error;
 
 pub mod nix_conf;
@@ -7,6 +7,7 @@ pub mod unstructured;
 
 pub trait Dotfile: Any {
     fn apply(&self, old_content: &[u8]) -> Result<Option<Vec<u8>>, ApplyError>;
+    fn file_permission(&self) -> fs::Permissions;
     fn merge(&mut self, y: Box<dyn Dotfile>) -> Result<(), MergeError>;
     fn as_any(self: Box<Self>) -> Box<dyn Any>;
 }

@@ -1,89 +1,57 @@
-use age::{Identity, Recipient};
-use anyhow::{anyhow, bail};
-use std::io::{BufRead, Cursor, Read, Write};
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use std::{fs, iter};
+use age::Identity;
+use std::error::Error;
+use std::io::{Cursor, Read};
+use std::iter;
+use thiserror::Error;
 
-pub fn decrypt_file(filepath: String) -> anyhow::Result<()> {
+pub trait Decrpytor {
+    fn decrypt(&self, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>>;
+}
 
-    let filepath = Path::new(&filepath);
-    if filepath.extension().and_then(|x| x.to_str()) != Some("rage") {
-        bail!(
-            "encrypted file must have .age extension. actual patH: {:?}",
-            filepath
-        );
+pub struct AgeDecryptor {
+    identity: age::ssh::Identity,
+}
+
+#[derive(Debug, Error)]
+pub enum AgeIdentityParseError {
+    #[error("failed to parse identity")]
+    IOError(#[from] std::io::Error),
+}
+
+impl AgeDecryptor {
+    pub fn new(identity_str: String) -> Result<Self, AgeIdentityParseError> {
+        let identity = age::ssh::Identity::from_buffer(Cursor::new(identity_str), None)
+            .map_err(AgeIdentityParseError::IOError)?;
+        Ok(Self { identity })
     }
-    let bytes = fs::read(filepath)?;
-    let decrypted_data = decrypt(&bytes)?;
-
-    fs::write(filepath.with_extension(""), decrypted_data)?;
-    fs::remove_file(filepath)?;
-    Ok(())
 }
 
-pub fn decrypt(bytes: &[u8]) -> anyhow::Result<Vec<u8>> {
-    let encrypted_data = Cursor::new(bytes);
-
-    let identity_file_path = {
-        let mut path = locate_ssh_dir()?;
-        path.push("id_ed25519");
-        path
-    };
-    let private_key = fs::read_to_string(identity_file_path.as_path())?;
-    let identity = age::ssh::Identity::from_buffer(Cursor::new(private_key), None)
-        .map_err(|err| anyhow!(err))?;
-    let decrypted_data = decrypt_pure(&identity, encrypted_data)?;
-
-    Ok(decrypted_data)
+#[derive(Debug, Error)]
+enum AgeDecryptionError {
+    #[error("unexpected io error")]
+    IOError(#[from] std::io::Error),
+    #[error("failed to decrypt")]
+    AgeError(#[from] age::DecryptError),
 }
 
-fn locate_ssh_dir() -> anyhow::Result<PathBuf> {
-    let home_dir = dirs::home_dir().ok_or(anyhow!("Could not find home directory"))?;
-    let mut identity_file_path = home_dir;
-    identity_file_path.push(".ssh");
-    Ok(identity_file_path)
-}
+impl Decrpytor for AgeDecryptor {
+    fn decrypt(&self, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+        let encrypted_data = Cursor::new(bytes);
+        let decryptor = match age::Decryptor::new_buffered(encrypted_data)
+            .map_err(AgeDecryptionError::AgeError)?
+        {
+            age::Decryptor::Recipients(d) => d,
+            _ => unreachable!(),
+        };
 
-fn decrypt_pure<R: BufRead>(key: &dyn Identity, encrypted: R) -> anyhow::Result<Vec<u8>> {
-    let decryptor = match age::Decryptor::new_buffered(encrypted)? {
-        age::Decryptor::Recipients(d) => d,
-        _ => unreachable!(),
-    };
-
-    let mut decrypted = vec![];
-    let mut reader = decryptor.decrypt(iter::once(key))?;
-    reader.read_to_end(&mut decrypted)?;
-
-    Ok(decrypted)
-}
-
-pub fn encrypt_file(filepath: String) -> anyhow::Result<()> {
-    let filepath = Path::new(&filepath);
-    let public_key = {
-        let mut path = locate_ssh_dir()?;
-        path.push("id_ed25519.pub");
-        fs::read_to_string(path.as_path())?
-    };
-    let recipient: Box<dyn Recipient + Send> = Box::new(
-        age::ssh::Recipient::from_str(&public_key)
-            .map_err(|_| anyhow!("failed to parse public key"))?,
-    );
-    let plaintext = fs::read(filepath)?;
-    let encrypted = encrypt_pure(recipient, &plaintext)?;
-    fs::write(filepath.with_extension("rage"), encrypted)?;
-    fs::remove_file(filepath)?;
-    Ok(())
-}
-
-fn encrypt_pure(recipient: Box<dyn Recipient + Send>, plaintext: &[u8]) -> anyhow::Result<Vec<u8>> {
-    let encryptor =
-        age::Encryptor::with_recipients(vec![recipient]).expect("we provided a recipient");
-
-    let mut encrypted = vec![];
-    let mut writer = encryptor.wrap_output(&mut encrypted)?;
-    writer.write_all(plaintext)?;
-    writer.finish()?;
-
-    Ok(encrypted)
+        let mut decrypted = vec![];
+        let identity: &dyn Identity = &self.identity;
+        let mut reader = decryptor
+            .decrypt(iter::once(identity))
+            .map_err(AgeDecryptionError::AgeError)?;
+        reader
+            .read_to_end(&mut decrypted)
+            .map_err(AgeDecryptionError::IOError)?;
+        Ok(decrypted)
+    }
 }
