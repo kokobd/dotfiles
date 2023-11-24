@@ -5,7 +5,7 @@ use std::iter;
 use thiserror::Error;
 
 pub trait Decrpytor {
-    fn decrypt(&self, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>>;
+    fn decrypt(&self, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error + Send + Sync>>;
 }
 
 pub struct AgeDecryptor {
@@ -19,8 +19,8 @@ pub enum AgeIdentityParseError {
 }
 
 impl AgeDecryptor {
-    pub fn new(identity_str: String) -> Result<Self, AgeIdentityParseError> {
-        let identity = age::ssh::Identity::from_buffer(Cursor::new(identity_str), None)
+    pub fn new(identity_bytes: Vec<u8>) -> Result<Self, AgeIdentityParseError> {
+        let identity = age::ssh::Identity::from_buffer(Cursor::new(identity_bytes), None)
             .map_err(AgeIdentityParseError::IOError)?;
         Ok(Self { identity })
     }
@@ -35,7 +35,7 @@ enum AgeDecryptionError {
 }
 
 impl Decrpytor for AgeDecryptor {
-    fn decrypt(&self, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+    fn decrypt(&self, bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error + Send + Sync>> {
         let encrypted_data = Cursor::new(bytes);
         let decryptor = match age::Decryptor::new_buffered(encrypted_data)
             .map_err(AgeDecryptionError::AgeError)?

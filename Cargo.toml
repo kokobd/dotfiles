@@ -17,3 +17,4 @@ dirs = "5.0.1"
 clap = { version = "4.4.8", features = ["derive"] }
 thiserror = "1.0.50"
 pathbuf = "0.3.1"
+base64 = "0.21.5"

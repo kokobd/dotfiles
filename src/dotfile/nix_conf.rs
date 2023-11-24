@@ -30,18 +30,6 @@ impl<T> NixConfExt<T> {
             secret_key_files: (Vec::new(), new_ext()),
         }
     }
-
-    fn map_ext<F, U>(self, mut f: F) -> NixConfExt<U>
-    where
-        F: FnMut(T) -> U,
-    {
-        NixConfExt::<U> {
-            substituters: (self.substituters.0, f(self.substituters.1)),
-            trusted_public_keys: (self.trusted_public_keys.0, f(self.trusted_public_keys.1)),
-            post_build_hook: (self.post_build_hook.0, f(self.post_build_hook.1)),
-            secret_key_files: (self.secret_key_files.0, f(self.secret_key_files.1)),
-        }
-    }
 }
 
 impl NixConf {
@@ -159,8 +147,10 @@ fn merge<Ext>(x: NixConfExt<()>, y: NixConfExt<Ext>) -> Result<NixConfExt<Ext>, 
     })
 }
 
-fn merge_list<T, U>(mut x: (Vec<T>, ()), mut y: (Vec<T>, U)) -> (Vec<T>, U) {
+fn merge_list<T: Ord, U>(mut x: (Vec<T>, ()), mut y: (Vec<T>, U)) -> (Vec<T>, U) {
     x.0.append(&mut y.0);
+    x.0.sort();
+    x.0.dedup();
     (x.0, y.1)
 }
 

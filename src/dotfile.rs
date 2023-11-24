@@ -1,5 +1,10 @@
-use anyhow::Context;
-use std::{any::Any, collections::HashMap, error::Error, path::PathBuf, fs};
+use std::{
+    any::Any,
+    collections::{HashMap, HashSet},
+    error::Error,
+    fs, io,
+    path::{Path, PathBuf},
+};
 use thiserror::Error;
 
 pub mod nix_conf;
@@ -27,6 +32,12 @@ pub enum ApplyError {
     },
     #[error("other error: {0}")]
     Other(Box<dyn Error + Send + Sync>),
+    #[error("path: {path:?}, operation: {operation:?}, io error: {err:?}")]
+    IO {
+        path: PathBuf,
+        operation: String,
+        err: std::io::Error,
+    },
 }
 
 fn apply_utf8<D: Dotfile, F>(old_content: &[u8], consume: F) -> Result<Option<Vec<u8>>, ApplyError>
@@ -82,10 +93,39 @@ pub fn merge_dotfiles(
     Ok(result)
 }
 
-pub fn apply_dotfiles(dotfiles: HashMap<PathBuf, Box<dyn Dotfile>>) {}
+pub fn apply_dotfiles(
+    dotfiles: HashMap<PathBuf, Box<dyn Dotfile>>,
+) -> Result<HashSet<PathBuf>, ApplyError> {
+    let mut changed_files = HashSet::<PathBuf>::new();
+    for (path, dotfile) in dotfiles {
+        if apply_dotfile(path.as_path(), dotfile)? {
+            changed_files.insert(path);
+        }
+    }
+    Ok(changed_files)
+}
 
-fn apply_dotfile(path: PathBuf, dotfile: Box<dyn Dotfile>) -> anyhow::Result<()> {
-    let existing_content = std::fs::read(path.as_path()).with_context(|| format!("unable to read {}", path.display()))?;
+fn apply_dotfile(path: &Path, dotfile: Box<dyn Dotfile>) -> Result<bool, ApplyError> {
+    let lift_err = |operation: &str| {
+        let operation = operation.to_string();
+        |err: io::Error| ApplyError::IO {
+            path: path.to_path_buf(),
+            operation,
+            err,
+        }
+    };
+    let existing_content = if path.exists() {
+        std::fs::read(path).map_err(lift_err("fs::read"))?
+    } else {
+        vec![]
+    };
     let new_content = dotfile.apply(&existing_content)?;
-    Ok(())
+    let file_permissions = dotfile.file_permission();
+    if let Some(new_content) = new_content {
+        fs::write(path, new_content).map_err(lift_err("fs::write"))?;
+        fs::set_permissions(path, file_permissions).map_err(lift_err("fs::set_permissions"))?;
+        Ok(true)
+    } else {
+        Ok(false)
+    }
 }
