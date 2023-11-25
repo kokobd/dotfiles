@@ -21,8 +21,13 @@ pub fn dotfiles(config: &Config) -> Result<HashMap<PathBuf, Box<dyn Dotfile>>, D
                 error: err,
             })?,
     ));
+    let global_gitignore_path = config.home_dir.join(".gitignore");
+    let global_gitignore: Box<dyn Dotfile> = Box::new(Unstructured::new(
+        include_bytes!("../../config/global_gitignore").to_vec(),
+    ));
     Ok(HashMap::from([
         (git_config_path, git_config),
         (gpg_key_path, gpg_key),
+        (global_gitignore_path, global_gitignore),
     ]))
 }

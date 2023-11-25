@@ -12,11 +12,12 @@ use thiserror::Error;
 pub enum Target {
     PersonalNixCache,
     Git,
+    AWS,
 }
 
 pub fn all_targets() -> Vec<Target> {
     use Target::*;
-    vec![PersonalNixCache, Git]
+    vec![PersonalNixCache, Git, AWS]
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -69,13 +70,19 @@ pub fn bootstrap(config: Config, targets: Vec<Target>) -> anyhow::Result<()> {
         }
         dotfiles_vec
     })?;
-    let changed_files = apply_dotfiles(dotfiles)?;
+    let (changed_files, errors) = apply_dotfiles(dotfiles);
     if changed_files.is_empty() {
         println!("no files changed");
     } else {
         println!("changed files: ");
         for file in changed_files {
             println!("- {}", file.display());
+        }
+    }
+    if !errors.is_empty() {
+        println!("errors: ");
+        for (file, error) in errors.into_iter() {
+            println!("- {}: {:?}", file.display(), error);
         }
     }
 
@@ -90,6 +97,7 @@ impl Target {
         match self {
             Target::PersonalNixCache => targets::personal_nix_cache::dotfiles(config),
             Target::Git => targets::git::dotfiles(config),
+            Target::AWS => targets::aws::dotfiles(config),
         }
     }
 }

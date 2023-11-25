@@ -95,14 +95,22 @@ pub fn merge_dotfiles(
 
 pub fn apply_dotfiles(
     dotfiles: HashMap<PathBuf, Box<dyn Dotfile>>,
-) -> Result<HashSet<PathBuf>, ApplyError> {
+) -> (HashSet<PathBuf>, HashMap<PathBuf, ApplyError>) {
     let mut changed_files = HashSet::<PathBuf>::new();
+    let mut errors = HashMap::<PathBuf, ApplyError>::new();
     for (path, dotfile) in dotfiles {
-        if apply_dotfile(path.as_path(), dotfile)? {
-            changed_files.insert(path);
+        match apply_dotfile(path.as_path(), dotfile) {
+            Ok(changed) => {
+                if changed {
+                    changed_files.insert(path);
+                }
+            }
+            Err(err) => {
+                errors.insert(path, err);
+            }
         }
     }
-    Ok(changed_files)
+    (changed_files, errors)
 }
 
 fn apply_dotfile(path: &Path, dotfile: Box<dyn Dotfile>) -> Result<bool, ApplyError> {
@@ -122,6 +130,9 @@ fn apply_dotfile(path: &Path, dotfile: Box<dyn Dotfile>) -> Result<bool, ApplyEr
     let new_content = dotfile.apply(&existing_content)?;
     let file_permissions = dotfile.file_permission();
     if let Some(new_content) = new_content {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(lift_err("fs::create_dir_all"))?;
+        }
         fs::write(path, new_content).map_err(lift_err("fs::write"))?;
         fs::set_permissions(path, file_permissions).map_err(lift_err("fs::set_permissions"))?;
         Ok(true)
