@@ -6,8 +6,10 @@ cd "$(dirname "$0")"
 
 # Compiled dotfiles
 curl -L https://github.com/kokobd/dotfiles/releases/latest/download/dotfiles.tar.gz --output dotfiles.tar.gz
-tar xf dotfiles.tar.gz
-./bootstrap --region $CODER_REGION --ssh-private-key "$USER_SECRET"
+rm -rf
+mkdir rust
+tar xf dotfiles.tar.gz -C rust
+./rust/bootstrap --region $CODER_REGION --ssh-private-key "$USER_SECRET"
 
 # GPG
 if [ ! -z "$(which gpg)" ]; then
