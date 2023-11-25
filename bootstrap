@@ -11,7 +11,7 @@ tar xf dotfiles.tar.gz
 
 # GPG
 if [ ! -z "$(which gpg)" ]; then
-  gpg --import .gpg/private.gpg
+  gpg --import ~/.gpg/private.gpg
 fi
 
 case "$GITHUB_REPOSITORY" in
