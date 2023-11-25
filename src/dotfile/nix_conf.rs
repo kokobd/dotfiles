@@ -1,8 +1,6 @@
-use std::{any::Any, convert::identity, error::Error, os::unix::fs::PermissionsExt};
-
-use crate::dotfile::apply_utf8;
-
 use super::{merge_same_type, ApplyError, Dotfile, MergeError};
+use crate::dotfile::apply_utf8;
+use std::{any::Any, convert::identity, error::Error, os::unix::fs::PermissionsExt};
 
 /**
 /etc/nix/nix.conf: https://nixos.org/manual/nix/stable/command-ref/conf-file

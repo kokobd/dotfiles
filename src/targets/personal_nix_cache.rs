@@ -54,7 +54,7 @@ exec nix copy --to '{}' $OUT_PATHS
         Unstructured::new(
             config
                 .decryptor
-                .decrypt(include_bytes!("../config/nix-secret-key.rage"))
+                .decrypt(include_bytes!("../../config/nix-secret-key.rage"))
                 .map_err(|err| DecryptError {
                     path: "config/nix-secret-key.rage".to_string(),
                     error: err,

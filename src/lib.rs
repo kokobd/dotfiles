@@ -1,21 +1,22 @@
 mod dotfile;
 mod secret;
+mod targets;
 use base64::Engine;
 use dotfile::apply_dotfiles;
 use dotfile::{merge_dotfiles, Dotfile};
 use secret::{AgeDecryptor, AgeIdentityParseError};
 use std::{collections::HashMap, path::PathBuf};
 use thiserror::Error;
-mod personal_nix_cache;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
 pub enum Target {
     PersonalNixCache,
+    Git,
 }
 
 pub fn all_targets() -> Vec<Target> {
     use Target::*;
-    vec![PersonalNixCache]
+    vec![PersonalNixCache, Git]
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -87,7 +88,8 @@ impl Target {
         config: &Config,
     ) -> Result<HashMap<PathBuf, Box<dyn Dotfile>>, DecryptError> {
         match self {
-            Target::PersonalNixCache => personal_nix_cache::dotfiles(config),
+            Target::PersonalNixCache => targets::personal_nix_cache::dotfiles(config),
+            Target::Git => targets::git::dotfiles(config),
         }
     }
 }
