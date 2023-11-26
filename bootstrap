@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 
 # Compiled dotfiles
 curl -L https://github.com/kokobd/dotfiles/releases/latest/download/dotfiles.tar.gz --output dotfiles.tar.gz
-rm -rf
+rm -rf rust
 mkdir rust
 tar xf dotfiles.tar.gz -C rust
 ./rust/bootstrap --region $CODER_REGION --ssh-private-key "$USER_SECRET"
