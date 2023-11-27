@@ -301,7 +301,7 @@ experimental-features = nix-command flakes
 build-users-group = nixbld
 trusted-public-keys = cache.zelinf.net:poESahuRAXqYC2QPevSId+pTtoq0P1XfTxaSHRgfvVI=
 post-build-hook = /etc/nix/post-build-hook
-secret-key-files = a b /etc/nix/secret-key
+secret-key-files = /etc/nix/secret-key a b
 substituters = s3://nix-cache?endpoint=http://192.168.31.2:9091&profile=minio&compression=zstd&priority=0&trusted=true&want-mass-query=true"#
                     .to_string()
         )

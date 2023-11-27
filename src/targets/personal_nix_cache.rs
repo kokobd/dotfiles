@@ -8,7 +8,7 @@ use std::{collections::HashMap, os::unix::fs::PermissionsExt, path::PathBuf};
 
 pub fn dotfiles(config: &Config) -> Result<HashMap<PathBuf, Box<dyn Dotfile>>, DecryptError> {
     const MY_NIX_CACHE_PARAMS: &'static str =
-        "compression=zstd&priority=0&trusted=true&want-mass-query=true";
+        "compression=zstd&priority=0&trusted=true";
     let nix_substituter: Option<String> = match &config.region {
         Region::Home => Some(format!(
             "s3://nix-cache?endpoint=http://192.168.31.2:9091&profile=minio&{MY_NIX_CACHE_PARAMS}"
