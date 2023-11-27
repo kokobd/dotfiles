@@ -58,13 +58,13 @@ mkdir -p ~/.local/share/nix
 cat >~/.local/share/nix/trusted-settings.json <<EOF
 {
   "allow-import-from-derivation": {
-    "true": true
+    "true": false
   },
   "extra-substituters": {
-    "s3://bellroy-nix-cache?profile=bellroy https://cache.iog.io": true
+    "s3://bellroy-nix-cache?profile=bellroy https://cache.iog.io": false
   },
   "extra-trusted-public-keys": {
-    "bellroy-nix-cache-1:Cx/qZdMTZiTEUn+B16hIhqvtwYWukKo40EabPBaChJY= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=": true
+    "bellroy-nix-cache-1:Cx/qZdMTZiTEUn+B16hIhqvtwYWukKo40EabPBaChJY= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=": false
   }
 }
 EOF
